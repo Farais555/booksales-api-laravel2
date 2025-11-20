@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Validator;
 
 class BookController extends Controller
 {
-    // tampilkan semua data
+    // tampilkan semua data Read
     public function index() {
-        $books = Book::all();
+        $books = Book::with('genre', 'author')->get();
 
         if ($books->isEmpty()) {
             return response()->json([
@@ -27,7 +27,7 @@ class BookController extends Controller
         ], 200);
     }
 
-    // tambahkan data
+    // tambahkan data create
     public function store(Request $request) {
         // 1. validator
         $validator = Validator::make($request->all(), [
@@ -71,9 +71,9 @@ class BookController extends Controller
         ], 201);
     }
 
-    // cari salah satu data
+    // cari salah satu data read
     public function show(string $id) {
-        $book = Book::find($id);
+        $book = Book::with('genre', 'author')->find($id);
 
         if (!$book) {
             return response()->json([

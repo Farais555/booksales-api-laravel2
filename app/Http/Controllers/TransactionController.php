@@ -121,6 +121,75 @@ class TransactionController extends Controller
         ], 200);
     }
 
+    // update transaksi
+    public function update(Request $request, string $id)
+    {
+        // Validasi
+        $validator = Validator::make($request->all(), [
+            'book_id' => 'required|exists:books,id',
+            'quantity' => 'required|integer|min:1'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'data' => $validator->errors()
+            ], 422);
+        }
+
+        // Ambil transaksi lama
+        $transaction = Transaction::find($id);
+
+        if (!$transaction) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction not found'
+            ], 404);
+        }
+
+        // Ambil buku lama
+        $oldBook = Book::find($transaction->book_id);
+
+        // Kembalikan stok lama
+        if ($oldBook) {
+            $oldBook->stock += $transaction->quantity;
+            $oldBook->save();
+        }
+
+        // Ambil buku baru
+        $newBook = Book::find($request->book_id);
+
+        // Cek stok buku baru
+        if ($newBook->stock < $request->quantity) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Stock not enough for update'
+            ], 400);
+        }
+
+        // Kurangi stok baru
+        $newBook->stock -= $request->quantity;
+        $newBook->save();
+
+        // Hitung ulang total harga
+        $total = $newBook->price * $request->quantity;
+
+        // Update transaksi
+        $transaction->update([
+            'book_id' => $request->book_id,
+            'quantity' => $request->quantity,
+            'total_amount' => $total
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Transaction updated successfully',
+            'data' => $transaction
+        ]);
+    }
+
+
     // destroy data
     public function destroy(string $id) {
         $transactions = Transaction::find($id);
